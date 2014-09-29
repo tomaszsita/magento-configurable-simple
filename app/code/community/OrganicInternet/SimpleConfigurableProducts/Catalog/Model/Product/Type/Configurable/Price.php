@@ -47,12 +47,17 @@ class OrganicInternet_SimpleConfigurableProducts_Catalog_Model_Product_Type_Conf
 */
 
 		#check if it's a 'Wishlist buy request', if so return the price of the particular option added to the wishlist
+		/* Regretably, unless SCP provides changes to the Wishlist Configure Item flow, then this will always result in a Native Magento Configurable Product 
+		being added to the cart.  It would be preferable for SCP to intervene in the wishlist and only allow Simple Products to be added to the Wishlist. */
 		$buyRequest = $product->getCustomOption('info_buyRequest');
-		if ($buyRequest) {
-			$options = $product->getCustomOption('info_buyRequest')->getItem()->getOptionByCode('simple_product')->getData();
-			$productId = $options["product_id"];
-			$childProduct = Mage::getModel('catalog/product')->load($productId);
-            return $childProduct->getPrice();
+		if ($buyRequest){
+			$options = $product->getCustomOption('info_buyRequest')->getItem()->getOptionByCode('simple_product');
+			if($options !== null){ // If no code is available, then the Wishlist product is unconfigured.
+				$options = $options->getData();
+				$productId = $options["product_id"];
+				$childProduct = Mage::getModel('catalog/product')->load($productId);
+				return $childProduct->getFinalPrice(); // If it's a configured item then get the correct Final Price.
+			}/* If it's unconfigured it'll run to return false and prompt the user to configure the product at /wishlist/index/configure/id/, forcing proper price selection. */
 		}
 		
         $childProduct = $this->getChildProductWithLowestPrice($product, "finalPrice");
